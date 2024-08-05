@@ -25,16 +25,13 @@ public class ConfigWindow : Window, IDisposable
 
     private Interface.LaunchpadDevice[] lps;
     private List<String> lpIDs;
-    private Interface.LaunchpadDevice launchpad;
+    private Interface.LaunchpadDevice? launchpad;
     private Interface lpIface;
 
     private LaunchpadHotbarsPlugin Plugin;
 
-    private string failed;
+    private string failed = String.Empty;
 
-    // We give this window a constant ID using ###
-    // This allows for labels being dynamic, like "{FPS Counter}fps###XYZ counter window",
-    // and the window ID will always be "###XYZ counter window" for ImGui
     public ConfigWindow(LaunchpadHotbarsPlugin plugin) : base("Launchpad Config###Launchpad Config")
     {
         Flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
@@ -84,9 +81,7 @@ public class ConfigWindow : Window, IDisposable
                 launchpad = lp;
                 break;
             }
-        }
-        //lpIface.disconnect(launchpad);
-        lpIface.connect(launchpad);
+        }        
     }
 
     public override void Draw()
@@ -100,31 +95,37 @@ public class ConfigWindow : Window, IDisposable
             Configuration.Save();
         }
 
-        if (lpIface.Connected)
+        if (!String.IsNullOrWhiteSpace(Configuration.SelectedLaunchpadId) && lpIDs.Contains(Configuration.SelectedLaunchpadId) && launchpad != null)
         {
             if (ImGui.Button("Test Connection"))
             {
                 try
                 {
+                    lpIface.connect(launchpad);
                     lpIface.SetMode(LaunchpadMode.Programmer);
                     if (lpIface.IsLegacy)
                     {
-                        lpIface.createTextScroll("Hello World", 25, true, 125);
+                        lpIface.createTextScroll("FINAL FANTASY XIV", 10, true, 125);
                     }
                     else
                     {
-                        lpIface.createTextScrollMiniMk3RGB("Hello World", 25, true, 0xFF, 0x00, 0xFB);
-                    }                
+                        lpIface.createTextScrollMiniMk3RGB("FINAL FANTASY XIV", 10, true, 0xFF, 0x00, 0xFB);
+                    }
+                    lpIface.disconnect(launchpad);
                 }
                 catch (Exception ex)
                 {
                     Plugin.ChatError(ex.Message);
                 }
             }
+            if (ImGui.Button("Disconnect"))
+            {
+                lpIface.disconnect(launchpad);
+            }
         }
         if (!String.IsNullOrWhiteSpace(failed))
         {
-            ImGui.LabelText(failed, "");
+            ImGui.TextUnformatted(failed);
         }
     }
 }
