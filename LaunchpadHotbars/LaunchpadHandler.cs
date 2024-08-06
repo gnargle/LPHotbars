@@ -16,15 +16,13 @@ namespace LaunchpadHotbars
     public unsafe class LaunchpadHandler
     {
         [PluginService] internal static IFramework framework { get; private set; } = null!;
-        public List<String> LaunchpadIDs { get; set; }
-        private Interface.LaunchpadDevice[] lps;
+        public List<String> LaunchpadIDs { get; set; }       
 
+        private Interface.LaunchpadDevice[] lps;
         private Interface.LaunchpadDevice? launchpad;
         private Interface lpIface;
         private RaptureHotbarModule* hotbarModule;
-
-        Action<string> logAction;
-
+        private Action<string> logAction;
         private LaunchpadHotbarsPlugin plugin;
         private Configuration config;
         public LaunchpadHandler(LaunchpadHotbarsPlugin plugin, Configuration config) {
@@ -39,6 +37,7 @@ namespace LaunchpadHotbars
             lpIface = new Interface(logAction, logAction, logAction);
             ListLaunchpads();
             lpIface.OnLaunchpadKeyDown += KeyPressed;
+            lpIface.OnLaunchpadCCKeyDown += CCKeyPressed;
             hotbarModule = RaptureHotbarModule.Instance();
         }
 
@@ -171,9 +170,14 @@ namespace LaunchpadHotbars
             RaptureHotbarModule.Instance()->ExecuteSlotById(hotbarId, slotId);
         };
 
-        public void KeyPressed(object source, LaunchpadKeyEventArgs e)
+        private void HandleAnyKeyPress(LaunchpadButton lpButton)
         {
-            logAction("launchpad button fired");
+            if (lpButton == null || !lpButton.Hotbar.HasValue || !lpButton.Slot.HasValue)
+            {
+                logAction("launchpad button not configured.");
+                return;
+            }
+            
             if (hotbarModule != null)
             {
                 if (hotbarModule->Hotbars != null)
@@ -191,21 +195,44 @@ namespace LaunchpadHotbars
                                 RaptureHotbarModule.Instance()->ExecuteSlotById(1, 0);
                             }); */
 
-                            plugin.HotbarToExecute = 1;
-                            plugin.SlotToExecute = 0;
+                            plugin.HotbarToExecute = lpButton.Hotbar;
+                            plugin.SlotToExecute = lpButton.Slot;
                             logAction("hotbar and slot set");
 
-                        } else
+                        }
+                        else
                             logAction("slot is null");
                     }
-                    else 
+                    else
                         logAction("hotbar Slots is null");
-                } else
+                }
+                else
                     logAction("hotbars is null.");
             }
             else
                 logAction("hotbar module is null.");
+        }
 
+        public void KeyPressed(object source, LaunchpadKeyEventArgs e)
+        {
+            logAction($"launchpad button x:{e.GetX()}, y:{e.GetY()} fired");
+            var lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.XCoord == e.GetX() && b.YCoord == e.GetY());
+            HandleAnyKeyPress(lpButton);
+        }
+
+        public void CCKeyPressed(object source, LaunchpadCCKeyEventArgs e)
+        {
+            var lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == e.GetVal());
+            HandleAnyKeyPress(lpButton);
+            logAction($"CC key pressed {e.GetVal()}");
+        }
+
+        ~LaunchpadHandler()
+        {
+            if (lpIface.Connected)
+            {
+                Disconnect();
+            }
         }
     }  
 }

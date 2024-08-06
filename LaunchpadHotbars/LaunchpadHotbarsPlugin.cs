@@ -25,7 +25,7 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
     private MainWindow MainWindow { get; init; }
     private LaunchpadHandler launchpadHandler { get; init; }
 
-    public uint? HotbarToExecute { get; set; } = null;
+    public int? HotbarToExecute { get; set; } = null;
     public uint? SlotToExecute { get; set; } = null;
 
     public LaunchpadHotbarsPlugin(IDalamudPluginInterface pi)
@@ -46,7 +46,7 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
+            HelpMessage = "Open the configuration window for LaunchpadHotbars."
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -61,12 +61,15 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
 
     public void ChatError(string text)
     {
-        DalamudApi.PluginLog.Error(text);
-        DalamudApi.ChatGui.Print(new XivChatEntry
+        if (Configuration.ShowDebugMessages)
         {
-            Message = text,
-            Type = XivChatType.Say,
-        });
+            DalamudApi.PluginLog.Error(text);
+            DalamudApi.ChatGui.Print(new XivChatEntry
+            {
+                Message = text,
+                Type = XivChatType.Say,
+            });
+        }
     }
 
     public void Dispose()
@@ -96,7 +99,7 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
                 {
                     if (RaptureHotbarModule.Instance()->Hotbars != null)
                     {
-                        var hotbar = RaptureHotbarModule.Instance()->Hotbars[(int)HotbarToExecute.Value];
+                        var hotbar = RaptureHotbarModule.Instance()->Hotbars[HotbarToExecute.Value];
                         if (hotbar.Slots != null)
                         {
                             var slot = hotbar.GetHotbarSlot(SlotToExecute.Value);
