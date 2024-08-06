@@ -1,12 +1,16 @@
 {
-  "Author": "your name here",
-  "Name": "Sample Plugin",
-  "Punchline": "A short one-liner that shows up in /xlplugins.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
-  "ApplicableVersion": "any",
-  "Tags": [
-    "sample",
-    "plugin",
-    "goats"
-  ]
+    "Author": "athene",
+    "Name": "Launchpad Hotbars",
+    "Punchline": "A plugin that allows you to map hotbar actions to a novation launchpad",
+    "Description": "A plugin that allows you to map hotbar actions to a novation launchpad. /lphb to open config.",
+    "ApplicableVersion": "any",
+    "InternalName": "LaunchpadHotbars",
+    "RepoUrl": "https://github.com/gnargle/LPHotbars",
+    "Tags": [
+        "launchpad",
+        "plugin",
+        "hotbars",
+        "actions",
+        "midi"
+    ]
 }
