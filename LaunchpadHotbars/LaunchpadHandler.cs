@@ -170,7 +170,7 @@ namespace LaunchpadHotbars
             RaptureHotbarModule.Instance()->ExecuteSlotById(hotbarId, slotId);
         };
 
-        private void HandleAnyKeyPress(LaunchpadButton lpButton)
+        private void HandleAnyKeyPress(LaunchpadButton? lpButton)
         {
             if (lpButton == null || !lpButton.Hotbar.HasValue || !lpButton.Slot.HasValue)
             {

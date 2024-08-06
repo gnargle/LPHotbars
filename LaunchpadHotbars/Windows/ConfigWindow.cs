@@ -21,8 +21,8 @@ public class ConfigWindow : Window, IDisposable
     private bool firstOpen = true;
 
     private string[] numbers = new string[] { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
-    private int[] CCTopRow = new int[] { 91, 92, 93, 94, 95, 96, 97, 98, 0 }; //last is the logo, not a button.
-    private int[] CCRightColumn = new int[] { 0, 89, 79, 69, 59, 49, 39, 29, 19 }; //first is the logo, not a button
+    private int[] cCTopRow = new int[] { 91, 92, 93, 94, 95, 96, 97, 98, 0 }; //last is the logo, not a button.
+    private int[] cCRightColumn = new int[] { 0, 89, 79, 69, 59, 49, 39, 29, 19 }; //first is the logo, not a button
 
     public ConfigWindow(LaunchpadHotbarsPlugin plugin, LaunchpadHandler launchpadHandler) : base("Launchpad Config###Launchpad Config")
     {
@@ -100,23 +100,23 @@ public class ConfigWindow : Window, IDisposable
                         LaunchpadButton? lpButton = null;
                         if (x == 0)
                         {
-                            lpButton = lpGrid.FirstOrDefault(b => b.CCVal == CCTopRow[y]);
+                            lpButton = lpGrid.FirstOrDefault(b => b.CCVal == cCTopRow[y]);
                             if (lpButton != null)
-                                lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == CCTopRow[y]);
+                                lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == cCTopRow[y]);
                             if (lpButton == null)
                             {
-                                lpButton = new LaunchpadButton { CCVal = CCTopRow[y], XCoord = -1, YCoord = -1 };
+                                lpButton = new LaunchpadButton { CCVal = cCTopRow[y], XCoord = -1, YCoord = -1 };
                                 lpGrid.Add(lpButton);
                             }
                         }
                         else if (y == 8)
                         {
-                            lpButton = lpGrid.FirstOrDefault(b => b.CCVal == CCRightColumn[x]);
+                            lpButton = lpGrid.FirstOrDefault(b => b.CCVal == cCRightColumn[x]);
                             if (lpButton != null)
-                                lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == CCRightColumn[x]);
+                                lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == cCRightColumn[x]);
                             if (lpButton == null)
                             {
-                                lpButton = new LaunchpadButton { CCVal = CCRightColumn[x], XCoord = -1, YCoord = -1 };
+                                lpButton = new LaunchpadButton { CCVal = cCRightColumn[x], XCoord = -1, YCoord = -1 };
                                 lpGrid.Add(lpButton);
                             }
                         }
