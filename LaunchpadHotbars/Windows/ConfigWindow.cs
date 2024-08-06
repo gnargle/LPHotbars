@@ -1,38 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Dalamud.Interface.Windowing;
-using Dalamud;
-using Dalamud.Game.Command;
-using Dalamud.Game.Text;
-using Dalamud.Plugin;
-using Dalamud.Game.Gui.Dtr;
-using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Interface;
-using Dalamud.Interface.GameFonts;
-using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
-using LaunchpadNET;
+using System;
+using System.Linq;
+using System.Numerics;
 
 namespace LaunchpadHotbars.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private Configuration Configuration;
+    private Configuration config;
+    private LaunchpadHandler launchpadHandler;
+    
 
-    private Interface.LaunchpadDevice[] lps;
-    private List<String> lpIDs;
-    private Interface.LaunchpadDevice? launchpad;
-    private Interface lpIface;
-
-    private LaunchpadHotbarsPlugin Plugin;
+    private LaunchpadHotbarsPlugin plugin;
 
     private string failed = String.Empty;
 
-    public ConfigWindow(LaunchpadHotbarsPlugin plugin) : base("Launchpad Config###Launchpad Config")
+    public ConfigWindow(LaunchpadHotbarsPlugin plugin, LaunchpadHandler launchpadHandler) : base("Launchpad Config###Launchpad Config")
     {
         Flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                 ImGuiWindowFlags.NoScrollWithMouse;
@@ -40,24 +26,9 @@ public class ConfigWindow : Window, IDisposable
         Size = new Vector2(500, 400);
         SizeCondition = ImGuiCond.Appearing;
 
-        Configuration = plugin.Configuration;
-        this.Plugin = plugin;
-
-        var logAction = delegate (string name)
-        {
-            Plugin.ChatError(name);
-        };
-        lps = Interface.getConnectedLaunchpads(logAction);
-        lpIDs = new List<string>() { "" }.Union(lps.Where(l => l._isLegacy).Select(l => l._midiName)).Union(lps.Where(p => !p._isLegacy).Select(p => p._midiIn)).ToList();
-        lpIface = new Interface(logAction, logAction, logAction);
-        try
-        {
-            if (!String.IsNullOrWhiteSpace(Configuration.SelectedLaunchpadId) && lpIDs.Contains(Configuration.SelectedLaunchpadId))
-                SelectLaunchpad(Configuration.SelectedLaunchpadId);
-        }catch (Exception ex)
-        {
-            failed = ex.Message;
-        }
+        config = plugin.Configuration;
+        this.plugin = plugin;
+        this.launchpadHandler = launchpadHandler;      
     }    
 
     public void Dispose() { }
@@ -68,64 +39,63 @@ public class ConfigWindow : Window, IDisposable
         // Flags must be added or removed before Draw() is being called, or they won't apply        
     }
 
-    private void SelectLaunchpad(string name)
-    {
-        foreach (var lp in lps)
-        {
-            if (lp._isLegacy && lp._midiName == name)
-            {
-                launchpad = lp;
-                break;
-
-            } else if (lp._midiIn == name) {
-                launchpad = lp;
-                break;
-            }
-        }        
-    }
-
     public override void Draw()
     {
-        var selectedLP = Configuration.SelectedLaunchpadId;
-        var selectedLPint = lpIDs.IndexOf(selectedLP);
-        if (ImGui.Combo("Launchpad to connect to", ref selectedLPint, lpIDs.ToArray(), lpIDs.Count()))
+        var selectedLP = config.SelectedLaunchpadId;
+        var selectedLPint = launchpadHandler.LaunchpadIDs.IndexOf(selectedLP);
+        if (ImGui.Button("Refresh Launchpad List"))
         {
-            Configuration.SelectedLaunchpadId = lpIDs[selectedLPint];
-            SelectLaunchpad(Configuration.SelectedLaunchpadId);
-            Configuration.Save();
+            launchpadHandler.ListLaunchpads();
         }
 
-        if (!String.IsNullOrWhiteSpace(Configuration.SelectedLaunchpadId) && lpIDs.Contains(Configuration.SelectedLaunchpadId) && launchpad != null)
+        if (ImGui.Combo("Launchpad to connect to", ref selectedLPint, launchpadHandler.LaunchpadIDs.ToArray(), launchpadHandler.LaunchpadIDs.Count()))
         {
-            if (ImGui.Button("Test Connection"))
+            config.SelectedLaunchpadId = launchpadHandler.LaunchpadIDs[selectedLPint];            
+            config.Save();
+            launchpadHandler.SelectLaunchpad();
+        }
+
+        if (!String.IsNullOrWhiteSpace(config.SelectedLaunchpadId) && launchpadHandler.LaunchpadIDs.Contains(config.SelectedLaunchpadId) && ImGui.Button("Connect Launchpad"))
+        {
+            launchpadHandler.SelectLaunchpad();
+            launchpadHandler.ConnectLaunchpad();
+        }
+        
+        if (!String.IsNullOrWhiteSpace(config.SelectedLaunchpadId) && launchpadHandler.LaunchpadIDs.Contains(config.SelectedLaunchpadId) && launchpadHandler.LaunchpadReady)
+        {
+            if (launchpadHandler.LaunchpadConnected && ImGui.Button("Test Connection"))
             {
-                try
-                {
-                    lpIface.connect(launchpad);
-                    lpIface.SetMode(LaunchpadMode.Programmer);
-                    if (lpIface.IsLegacy)
-                    {
-                        lpIface.createTextScroll("FINAL FANTASY XIV", 10, true, 125);
-                    }
-                    else
-                    {
-                        lpIface.createTextScrollMiniMk3RGB("FINAL FANTASY XIV", 10, true, 0xFF, 0x00, 0xFB);
-                    }
-                    lpIface.disconnect(launchpad);
-                }
-                catch (Exception ex)
-                {
-                    Plugin.ChatError(ex.Message);
-                }
+                launchpadHandler.TestConnection();
             }
-            if (ImGui.Button("Disconnect"))
+            if (launchpadHandler.LaunchpadConnected && ImGui.Button("Disconnect"))
             {
-                lpIface.disconnect(launchpad);
+                launchpadHandler.Disconnect();
             }
         }
         if (!String.IsNullOrWhiteSpace(failed))
         {
-            ImGui.TextUnformatted(failed);
+            plugin.ChatError(failed);
+        }
+        if (ImGui.Button("action test"))
+        {
+            unsafe
+            {
+                if (RaptureHotbarModule.Instance() != null)
+                {
+                    if (RaptureHotbarModule.Instance()->Hotbars != null)
+                    {
+                        var hotbar = RaptureHotbarModule.Instance()->Hotbars[1];
+                        if (hotbar.Slots != null)
+                        {
+                            var slot = hotbar.GetHotbarSlot(0);
+                            if (slot != null)
+                            {
+                                RaptureHotbarModule.Instance()->ExecuteSlot(slot);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

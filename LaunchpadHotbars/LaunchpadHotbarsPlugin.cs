@@ -5,6 +5,8 @@ using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using LaunchpadHotbars.Windows;
+using Dalamud.Game.Text;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 namespace LaunchpadHotbars;
 
@@ -12,7 +14,7 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
 {
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
-    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
+    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;    
 
     private const string CommandName = "/lphb";
 
@@ -21,6 +23,10 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
     public readonly WindowSystem WindowSystem = new("LaunchpadHotbars");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
+    private LaunchpadHandler launchpadHandler { get; init; }
+
+    public uint? HotbarToExecute { get; set; } = null;
+    public uint? SlotToExecute { get; set; } = null;
 
     public LaunchpadHotbarsPlugin(IDalamudPluginInterface pi)
     {
@@ -30,7 +36,9 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
         // you might normally want to embed resources and load them from the manifest stream
         var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
 
-        ConfigWindow = new ConfigWindow(this);
+        launchpadHandler = new LaunchpadHandler(this, Configuration);
+
+        ConfigWindow = new ConfigWindow(this, launchpadHandler);
         MainWindow = new MainWindow(this, goatImagePath);
 
         WindowSystem.AddWindow(ConfigWindow);
@@ -54,6 +62,11 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
     public void ChatError(string text)
     {
         DalamudApi.PluginLog.Error(text);
+        DalamudApi.ChatGui.Print(new XivChatEntry
+        {
+            Message = text,
+            Type = XivChatType.Say,
+        });
     }
 
     public void Dispose()
@@ -72,7 +85,34 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
         ToggleConfigUI();
     }
 
-    private void DrawUI() => WindowSystem.Draw();
+    private void DrawUI() { 
+        WindowSystem.Draw();
+        if (HotbarToExecute != null && SlotToExecute != null)
+        {
+            ChatError("hotbar id: " + HotbarToExecute + " slot id: " + SlotToExecute);
+            unsafe
+            {
+                if (RaptureHotbarModule.Instance() != null)
+                {
+                    if (RaptureHotbarModule.Instance()->Hotbars != null)
+                    {
+                        var hotbar = RaptureHotbarModule.Instance()->Hotbars[(int)HotbarToExecute.Value];
+                        if (hotbar.Slots != null)
+                        {
+                            var slot = hotbar.GetHotbarSlot(SlotToExecute.Value);
+                            if (slot != null)
+                            {
+                                ChatError("firing slot");
+                                RaptureHotbarModule.Instance()->ExecuteSlot(slot);
+                            }
+                        }
+                    }
+                }
+            }
+            HotbarToExecute = null;
+            SlotToExecute = null;
+        }
+    }
 
     public void ToggleConfigUI() => ConfigWindow.Toggle();
     public void ToggleMainUI() => MainWindow.Toggle();
