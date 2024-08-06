@@ -1,6 +1,7 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.FFXIV.Common.Lua;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -17,16 +18,15 @@ public class ConfigWindow : Window, IDisposable
 
     private LaunchpadHotbarsPlugin plugin;
 
-    private string failed = String.Empty;
+    private bool firstOpen = true;
 
     private string[] numbers = new string[] { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
-    private int[] CCTopRow = new int[] { 91, 92, 93, 94, 95, 96, 97, 98, 0 }; //last is the logo
-    private int[] CCRightColumn = new int[] { 0, 89, 79, 69, 59, 49, 39, 29, 19 }; //first is the logo
+    private int[] CCTopRow = new int[] { 91, 92, 93, 94, 95, 96, 97, 98, 0 }; //last is the logo, not a button.
+    private int[] CCRightColumn = new int[] { 0, 89, 79, 69, 59, 49, 39, 29, 19 }; //first is the logo, not a button
 
     public ConfigWindow(LaunchpadHotbarsPlugin plugin, LaunchpadHandler launchpadHandler) : base("Launchpad Config###Launchpad Config")
     {
-        Flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
-                ImGuiWindowFlags.NoScrollWithMouse;
+        Flags = ImGuiWindowFlags.NoCollapse;
 
         Size = new Vector2(550, 850);
         SizeCondition = ImGuiCond.Appearing;
@@ -35,6 +35,7 @@ public class ConfigWindow : Window, IDisposable
         this.plugin = plugin;
         this.launchpadHandler = launchpadHandler;
         lpGrid = new List<LaunchpadButton>();
+        firstOpen = true;
     }    
 
     public void Dispose() { }
@@ -103,7 +104,10 @@ public class ConfigWindow : Window, IDisposable
                             if (lpButton != null)
                                 lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == CCTopRow[y]);
                             if (lpButton == null)
-                                lpButton = new LaunchpadButton { CCVal = CCTopRow[y] };
+                            {
+                                lpButton = new LaunchpadButton { CCVal = CCTopRow[y], XCoord = -1, YCoord = -1 };
+                                lpGrid.Add(lpButton);
+                            }
                         }
                         else if (y == 8)
                         {
@@ -111,19 +115,27 @@ public class ConfigWindow : Window, IDisposable
                             if (lpButton != null)
                                 lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == CCRightColumn[x]);
                             if (lpButton == null)
-                                lpButton = new LaunchpadButton { CCVal = CCRightColumn[x] };
+                            {
+                                lpButton = new LaunchpadButton { CCVal = CCRightColumn[x], XCoord = -1, YCoord = -1 };
+                                lpGrid.Add(lpButton);
+                            }
                         }
                         else
                         {
-                            lpGrid.FirstOrDefault(b => b.XCoord == x && b.YCoord == y);
+                            lpGrid.FirstOrDefault(b => b.XCoord == x - 1 && b.YCoord == y && b.CCVal == -1);
                             if (lpButton == null)
                             {
-                                lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.XCoord == x - 1 && b.YCoord == y);
+                                lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.XCoord == x - 1 && b.YCoord == y && b.CCVal == -1);
                             }
                             if (lpButton == null)
-                                lpButton = new LaunchpadButton { XCoord = x - 1, YCoord = y };
+                            {
+                                lpButton = new LaunchpadButton { XCoord = x - 1, YCoord = y, CCVal = -1 };
+                                lpGrid.Add(lpButton);
+                            }
                         }
-                        lpGrid.Add(lpButton);
+
+                        if (firstOpen)
+                            plugin.ChatError(lpButton.ToString());
 
                         int hotbar = 0;
                         if (lpButton.Hotbar.HasValue)
@@ -157,8 +169,14 @@ public class ConfigWindow : Window, IDisposable
                             }
                         }
 
+                        if (!config.LaunchpadGrid.Any())
+                        {  //first run
+                            config.LaunchpadGrid = lpGrid;
+                            config.Save();
+                        }
                     }
                 }
+                firstOpen = false;
                 ImGui.EndTable();
 
                 if (ImGui.Button("Save Launchpad Mapping"))
@@ -169,7 +187,7 @@ public class ConfigWindow : Window, IDisposable
                         plugin.ChatError($"button {btn.XCoord},{btn.YCoord} mapped to hotbar {btn.Hotbar}, slot {btn.Slot}");
                     }
                     config.Save();
-                }
+                }                
             }
         }
 
