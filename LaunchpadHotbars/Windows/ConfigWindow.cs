@@ -19,8 +19,10 @@ public class ConfigWindow : Window, IDisposable
     private LaunchpadHotbarsPlugin plugin;
 
     private bool firstOpen = true;
+    private bool testInProgress = false;
 
-    private string[] numbers = new string[] { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+    private string[] hotbarNumbers = new string[] { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+    private string[] slotNumbers = new string[] { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" };
     private int[] cCTopRow = new int[] { 91, 92, 93, 94, 95, 96, 97, 98, 0 }; //last is the logo, not a button.
     private int[] cCRightColumn = new int[] { 0, 89, 79, 69, 59, 49, 39, 29, 19 }; //first is the logo, not a button
 
@@ -34,11 +36,13 @@ public class ConfigWindow : Window, IDisposable
         config = plugin.Configuration;
         this.plugin = plugin;
         this.launchpadHandler = launchpadHandler;
-        lpGrid = new List<LaunchpadButton>();
+        lpGrid = config.LaunchpadGrid;
         firstOpen = true;
     }    
 
-    public void Dispose() { }
+    public void Dispose() {
+        launchpadHandler.Disconnect();
+    }
 
     public override void PreDraw()
     {
@@ -73,6 +77,12 @@ public class ConfigWindow : Window, IDisposable
             if (launchpadHandler.LaunchpadConnected && ImGui.Button("Test Connection"))
             {
                 launchpadHandler.TestConnection();
+                testInProgress = true;
+            }
+            if (testInProgress && ImGui.Button("Stop Test (dyanmic lighting won't work while the test is running!"))
+            {
+                launchpadHandler.StopTest();
+                testInProgress = false;
             }
             if (launchpadHandler.LaunchpadConnected && ImGui.Button("Disconnect"))
             {
@@ -141,7 +151,7 @@ public class ConfigWindow : Window, IDisposable
                         if (lpButton.Hotbar.HasValue)
                             hotbar = lpButton.Hotbar.Value + 1;
                         ImGui.SetNextItemWidth(50);
-                        if (ImGui.Combo($"###{x}{y}hotbar", ref hotbar, numbers, numbers.Count()))
+                        if (ImGui.Combo($"###{x}{y}hotbar", ref hotbar, hotbarNumbers, hotbarNumbers.Count()))
                         {
                             if (hotbar == 0)
                             {
@@ -157,7 +167,7 @@ public class ConfigWindow : Window, IDisposable
                         if (lpButton.Slot.HasValue)
                             slot = (int)lpButton.Slot.Value + 1;
                         ImGui.SetNextItemWidth(50);
-                        if (ImGui.Combo($"###{x}{y}slot", ref slot, numbers, numbers.Count()))
+                        if (ImGui.Combo($"###{x}{y}slot", ref slot, slotNumbers, slotNumbers.Count()))
                         {
                             if (slot == 0)
                             {
@@ -187,6 +197,7 @@ public class ConfigWindow : Window, IDisposable
                         plugin.ChatError($"button {btn.XCoord},{btn.YCoord} mapped to hotbar {btn.Hotbar}, slot {btn.Slot}");
                     }
                     config.Save();
+                    launchpadHandler.InitialLightUp();
                 }                
             }
         }

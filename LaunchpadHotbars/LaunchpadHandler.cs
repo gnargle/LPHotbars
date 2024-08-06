@@ -3,6 +3,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using LaunchpadNET;
+using Midi.Instruments;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,6 +40,7 @@ namespace LaunchpadHotbars
             lpIface.OnLaunchpadKeyDown += KeyPressed;
             lpIface.OnLaunchpadCCKeyDown += CCKeyPressed;
             hotbarModule = RaptureHotbarModule.Instance();
+            ConnectLaunchpad();
         }
 
         public bool LaunchpadReady
@@ -120,6 +122,7 @@ namespace LaunchpadHotbars
                         else
                         {
                             lpIface.SetMode(LaunchpadMode.Programmer);
+                            InitialLightUp();
                             return true;
                         }
                     }
@@ -135,6 +138,36 @@ namespace LaunchpadHotbars
                 logAction("No launchpad selected.");
             }
             return false;
+        }
+
+        public void UpdateButtonColour(LaunchpadButton lpButton, int velo)
+        {
+            if (lpButton.XCoord >= 0 && lpButton.YCoord >= 0)
+                lpIface.setLED(lpButton.XCoord, lpButton.YCoord, velo);
+            else if (lpButton.CCVal > 90)
+                lpIface.setTopLED((TopLEDs)lpButton.CCVal, velo);
+            else if (lpButton.CCVal < 90 && lpButton.CCVal > 0)
+                lpIface.setSideLED((SideLEDs)lpButton.CCVal, velo);
+        }
+
+        public void InitialLightUp()
+        {
+            lpIface.clearAllLEDs();
+            var mainGridLEDs = config.LaunchpadGrid.Where(b => b.XCoord >= 0 && b.YCoord >= 0).Where(b => b.Hotbar != null && b.Slot != null);
+            foreach (var lpButton in mainGridLEDs)
+            {
+                UpdateButtonColour(lpButton, 21);
+            }
+            var topLEDs = config.LaunchpadGrid.Where(b => b.CCVal > 90).Where(b => b.Hotbar != null && b.Slot != null);
+            foreach (var lpButton in topLEDs)
+            {
+                UpdateButtonColour(lpButton, 21);
+            }
+            var sideLEDs = config.LaunchpadGrid.Where(b => b.CCVal < 90 && b.CCVal > 0).Where(b => b.Hotbar != null && b.Slot != null);
+            foreach (var lpButton in sideLEDs)
+            {
+                UpdateButtonColour(lpButton, 21);
+            }
         }
 
         public void Disconnect()
@@ -157,6 +190,23 @@ namespace LaunchpadHotbars
                 else
                 {
                     lpIface.createTextScrollMiniMk3RGB("FINAL FANTASY XIV", 10, true, 0xFF, 0x00, 0xFB);
+                }
+            }
+            catch (Exception ex)
+            {
+                logAction(ex.Message);
+            }
+        }
+        public void StopTest() {
+            try
+            {
+                if (lpIface.IsLegacy)
+                {
+                    lpIface.stopLoopingTextScroll();
+                }
+                else
+                {
+                    lpIface.stopLoopingTextScrollMiniMk3();
                 }
             }
             catch (Exception ex)
@@ -189,16 +239,14 @@ namespace LaunchpadHotbars
                         if (slot != null)
                         {
                             logAction("slot is not null");
-                            //this doesn't work from here, for whatever reason. So we're gonna have to be hacky instead.
-                            /*framework.RunOnTick(() =>
-                            {
-                                RaptureHotbarModule.Instance()->ExecuteSlotById(1, 0);
-                            }); */
-
                             plugin.HotbarToExecute = lpButton.Hotbar;
                             plugin.SlotToExecute = lpButton.Slot;
                             logAction("hotbar and slot set");
-
+                            if (!lpButton.OnCooldown)
+                            {
+                                UpdateButtonColour(lpButton, 120);
+                                lpButton.OnCooldown = true;
+                            }
                         }
                         else
                             logAction("slot is null");
