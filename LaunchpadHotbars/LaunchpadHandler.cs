@@ -136,7 +136,7 @@ namespace LaunchpadHotbars
                     }
                     catch (Exception ex)
                     {
-                        logAction("Launchpad could nto be connected to with error: " + ex.Message);
+                        logAction("Launchpad could not be connected to with error: " + ex.Message);
                     }
 
                 }
