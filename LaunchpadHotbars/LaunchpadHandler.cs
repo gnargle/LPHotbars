@@ -26,6 +26,15 @@ namespace LaunchpadHotbars
         private Action<string> logAction;
         private LaunchpadHotbarsPlugin plugin;
         private Configuration config;
+
+        private const int READY_COLOUR = 87;
+        private const int MAX_CD_COLOUR = 120;
+        private const int FIFTEEN_PCT_COLOUR = 10;
+        private const int THIRTY_PCT_COLOUR = 9;
+        private const int FORTYFIVE_PCT_COLOUR = 108;
+        private const int SIXTY_PCT_COLOUR = 124;
+        private const int SEVENTYFIVE_PCT_COLOUR = 75;
+        private const int NINETY_PCT_COLOUR = 17;
         public LaunchpadHandler(LaunchpadHotbarsPlugin plugin, Configuration config) {
             this.plugin = plugin;
             this.config = config;
@@ -150,23 +159,72 @@ namespace LaunchpadHotbars
                 lpIface.setSideLED((SideLEDs)lpButton.CCVal, velo);
         }
 
+        private void CoolDownLighting(LaunchpadButton lpButton, float pct)
+        {
+            if (pct > 0 && pct < 0.15) {
+                UpdateButtonColour(lpButton, MAX_CD_COLOUR);
+            }
+            else if (pct > 0.15 && pct < 0.3)
+            {
+                UpdateButtonColour(lpButton, FIFTEEN_PCT_COLOUR);
+            }
+            else if (pct > 0.3 && pct < 0.45)
+            {
+                UpdateButtonColour(lpButton, THIRTY_PCT_COLOUR);
+            }
+            else if (pct > 0.45 && pct < 0.60)
+            {
+                UpdateButtonColour(lpButton, FORTYFIVE_PCT_COLOUR);
+            }
+            else if (pct > 0.6 && pct < 0.75)
+            {
+                UpdateButtonColour(lpButton, SIXTY_PCT_COLOUR);
+            }
+            else if (pct > 0.75 && pct < 0.9)
+            {
+                UpdateButtonColour(lpButton, SEVENTYFIVE_PCT_COLOUR);
+            }
+            else if (pct > 0.9 && pct < 0.99)
+            {
+                UpdateButtonColour(lpButton, NINETY_PCT_COLOUR);
+            }
+            else if (pct > 0.99)
+            {
+                UpdateButtonColour(lpButton, READY_COLOUR);
+            }
+        }
+
+        private void OffCooldown(LaunchpadButton lpButton)
+        {
+            lpButton.OnCooldown = false;
+        }
+
+        public void ManageCooldown(LaunchpadButton lpButton, float pct)
+        {
+            CoolDownLighting (lpButton, pct);
+            if (pct >= 0.99)
+            {
+                OffCooldown(lpButton);
+            }
+        }
+
         public void InitialLightUp()
         {
             lpIface.clearAllLEDs();
             var mainGridLEDs = config.LaunchpadGrid.Where(b => b.XCoord >= 0 && b.YCoord >= 0).Where(b => b.Hotbar != null && b.Slot != null);
             foreach (var lpButton in mainGridLEDs)
             {
-                UpdateButtonColour(lpButton, 21);
+                UpdateButtonColour(lpButton, READY_COLOUR);
             }
             var topLEDs = config.LaunchpadGrid.Where(b => b.CCVal > 90).Where(b => b.Hotbar != null && b.Slot != null);
             foreach (var lpButton in topLEDs)
             {
-                UpdateButtonColour(lpButton, 21);
+                UpdateButtonColour(lpButton, READY_COLOUR);
             }
             var sideLEDs = config.LaunchpadGrid.Where(b => b.CCVal < 90 && b.CCVal > 0).Where(b => b.Hotbar != null && b.Slot != null);
             foreach (var lpButton in sideLEDs)
             {
-                UpdateButtonColour(lpButton, 21);
+                UpdateButtonColour(lpButton, READY_COLOUR);
             }
         }
 
@@ -244,7 +302,7 @@ namespace LaunchpadHotbars
                             logAction("hotbar and slot set");
                             if (!lpButton.OnCooldown)
                             {
-                                UpdateButtonColour(lpButton, 120);
+                                UpdateButtonColour(lpButton, MAX_CD_COLOUR);
                                 lpButton.OnCooldown = true;
                             }
                         }

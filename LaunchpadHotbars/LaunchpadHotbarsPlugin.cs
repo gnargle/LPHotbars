@@ -7,16 +7,51 @@ using Dalamud.Plugin.Services;
 using LaunchpadHotbars.Windows;
 using Dalamud.Game.Text;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using System.Linq;
 
 namespace LaunchpadHotbars;
 
-public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
+public unsafe sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
 {
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
-    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;    
+    [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
 
     private const string CommandName = "/lphb";
+
+    private ActionManager* actionManager;
+    private RaptureHotbarModule* hotbarModule;
+
+    private ActionManager* ActionMgr
+    {
+        get
+        {
+            if (actionManager == null)
+            {
+                if (ActionManager.Instance() != null)
+                {
+                    actionManager = ActionManager.Instance();
+                }
+            }
+            return actionManager;
+        }
+    }
+
+    private RaptureHotbarModule* HotbarModule
+    {
+        get
+        {
+            if (hotbarModule == null)
+            {
+                if (RaptureHotbarModule.Instance() != null)
+                {
+                    hotbarModule = RaptureHotbarModule.Instance();
+                }
+            }
+            return hotbarModule;
+        }
+    }
 
     public Configuration Configuration { get; init; }
 
@@ -88,33 +123,52 @@ public sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
         ToggleConfigUI();
     }
 
-    private void DrawUI() { 
-        WindowSystem.Draw();
+    private void CastAction()
+    {
         if (HotbarToExecute != null && SlotToExecute != null)
         {
             ChatError("hotbar id: " + HotbarToExecute + " slot id: " + SlotToExecute);
-            unsafe
+            if (HotbarModule != null)
             {
-                if (RaptureHotbarModule.Instance() != null)
+                if (HotbarModule->Hotbars != null)
                 {
-                    if (RaptureHotbarModule.Instance()->Hotbars != null)
+                    var hotbar = HotbarModule->Hotbars[HotbarToExecute.Value];
+                    if (hotbar.Slots != null)
                     {
-                        var hotbar = RaptureHotbarModule.Instance()->Hotbars[HotbarToExecute.Value];
-                        if (hotbar.Slots != null)
+                        var slot = hotbar.GetHotbarSlot(SlotToExecute.Value);
+                        if (slot != null)
                         {
-                            var slot = hotbar.GetHotbarSlot(SlotToExecute.Value);
-                            if (slot != null)
-                            {
-                                ChatError("firing slot");
-                                RaptureHotbarModule.Instance()->ExecuteSlot(slot);
-                            }
+                            ChatError("firing slot");
+                            HotbarModule->ExecuteSlot(slot);
                         }
                     }
                 }
-            }
+            }            
             HotbarToExecute = null;
             SlotToExecute = null;
         }
+    }
+
+    private void CheckRecasts()
+    {
+        var cooldowns = Configuration.LaunchpadGrid.Where(b => b.OnCooldown && b.Hotbar.HasValue && b.Slot.HasValue);
+        foreach (var cd in cooldowns) {
+            var slot = HotbarModule->GetSlotById((uint)cd.Hotbar.Value, cd.Slot.Value);
+            if (slot != null)
+            {
+                var aid = slot->ApparentActionId;
+
+                var recastTime = ActionMgr->GetRecastTime(ActionType.Action, aid);
+                var recastElapsed = ActionMgr->GetRecastTimeElapsed(ActionType.Action, aid);
+                var pct = recastElapsed / recastTime;
+                launchpadHandler.ManageCooldown(cd, pct);
+            }
+        }        
+    }
+
+    private void DrawUI() { 
+        WindowSystem.Draw();
+        CastAction();
     }
 
     public void ToggleConfigUI() => ConfigWindow.Toggle();
