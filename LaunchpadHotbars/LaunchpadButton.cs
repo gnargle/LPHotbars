@@ -6,7 +6,6 @@ namespace LaunchpadHotbars
     {
         public int XCoord { get; set; }
         public int YCoord { get; set; }
-        public int CCVal { get; set; }
         public int? Hotbar { get; set; }
         public uint? Slot { get; set; }
 
@@ -16,7 +15,7 @@ namespace LaunchpadHotbars
 
         public override string ToString()
         {
-            return $"lpbutton info: CCVal{CCVal}, x:{XCoord}, y:{YCoord}, hotbar: {Hotbar}, slot: {Slot}";
+            return $"lpbutton info: x:{XCoord}, y:{YCoord}, hotbar: {Hotbar}, slot: {Slot}";
         }
     }
 }

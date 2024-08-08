@@ -18,6 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="launchpad-dot-net" Version="2.0.0" />
+    <PackageReference Include="launchpad-dot-net" Version="2.2.0" />
   </ItemGroup>
 </Project>

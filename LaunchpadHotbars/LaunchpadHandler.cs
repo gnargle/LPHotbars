@@ -47,7 +47,6 @@ namespace LaunchpadHotbars
             lpIface = new Interface(logAction, logAction, logAction);
             ListLaunchpads();
             lpIface.OnLaunchpadKeyDown += KeyPressed;
-            lpIface.OnLaunchpadCCKeyDown += CCKeyPressed;
             hotbarModule = RaptureHotbarModule.Instance();
             ConnectLaunchpad();
         }
@@ -153,10 +152,6 @@ namespace LaunchpadHotbars
         {
             if (lpButton.XCoord >= 0 && lpButton.YCoord >= 0)
                 lpIface.setLED(lpButton.XCoord, lpButton.YCoord, velo);
-            else if (lpButton.CCVal > 90)
-                lpIface.setTopLED((TopLEDs)lpButton.CCVal, velo);
-            else if (lpButton.CCVal < 90 && lpButton.CCVal > 0)
-                lpIface.setSideLED((SideLEDs)lpButton.CCVal, velo);
         }
 
         private void CoolDownLighting(LaunchpadButton lpButton, float pct)
@@ -213,16 +208,6 @@ namespace LaunchpadHotbars
             lpIface.clearAllLEDs();
             var mainGridLEDs = config.LaunchpadGrid.Where(b => b.XCoord >= 0 && b.YCoord >= 0).Where(b => b.Hotbar != null && b.Slot != null);
             foreach (var lpButton in mainGridLEDs)
-            {
-                UpdateButtonColour(lpButton, READY_COLOUR);
-            }
-            var topLEDs = config.LaunchpadGrid.Where(b => b.CCVal > 90).Where(b => b.Hotbar != null && b.Slot != null);
-            foreach (var lpButton in topLEDs)
-            {
-                UpdateButtonColour(lpButton, READY_COLOUR);
-            }
-            var sideLEDs = config.LaunchpadGrid.Where(b => b.CCVal < 90 && b.CCVal > 0).Where(b => b.Hotbar != null && b.Slot != null);
-            foreach (var lpButton in sideLEDs)
             {
                 UpdateButtonColour(lpButton, READY_COLOUR);
             }
@@ -324,13 +309,6 @@ namespace LaunchpadHotbars
             logAction($"launchpad button x:{e.GetX()}, y:{e.GetY()} fired");
             var lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.XCoord == e.GetX() && b.YCoord == e.GetY());
             HandleAnyKeyPress(lpButton);
-        }
-
-        public void CCKeyPressed(object source, LaunchpadCCKeyEventArgs e)
-        {
-            var lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.CCVal == e.GetVal());
-            HandleAnyKeyPress(lpButton);
-            logAction($"CC key pressed {e.GetVal()}");
         }
 
         ~LaunchpadHandler()
