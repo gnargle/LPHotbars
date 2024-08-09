@@ -6,7 +6,7 @@
     "ApplicableVersion": "any",
     "InternalName": "LaunchpadHotbars",
     "RepoUrl": "https://github.com/gnargle/LPHotbars",
-    "IconUrl": "https://raw.githubusercontent.com/gnargle/LaunchpadHotbars/master/LaunchpadHotbars/images/icon.png",
+    "IconUrl": "https://raw.githubusercontent.com/gnargle/LPHotbars/master/LaunchpadHotbars/images/icon.png",
     "Tags": [
         "launchpad",
         "plugin",
