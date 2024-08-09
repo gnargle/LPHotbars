@@ -11,6 +11,8 @@ namespace LaunchpadHotbars
 
         [IgnoreDataMember]
         public bool OnCooldown { get; set; } = false;
+        [IgnoreDataMember]
+        public int LastColour { get; set; } = -1;
 
 
         public override string ToString()

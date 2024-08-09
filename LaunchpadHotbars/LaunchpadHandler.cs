@@ -150,13 +150,35 @@ namespace LaunchpadHotbars
 
         public void UpdateButtonColour(LaunchpadButton lpButton, int velo)
         {
+            if (lpButton.XCoord >= 0 && lpButton.YCoord >= 0 && lpButton.LastColour != velo)
+            {
+                lpIface.setLEDPulse(lpButton.XCoord, lpButton.YCoord, velo);
+                lpButton.LastColour = velo;
+            }
+        }
+
+        public void UpdateButtonColourForce(LaunchpadButton lpButton, int velo)
+        {
             if (lpButton.XCoord >= 0 && lpButton.YCoord >= 0)
-                lpIface.setLED(lpButton.XCoord, lpButton.YCoord, velo);
+            {
+                lpIface.setLEDPulse(lpButton.XCoord, lpButton.YCoord, velo);
+                lpButton.LastColour = velo;
+            }
+        }
+
+        public void UpdateUnusedButtonColour(LaunchpadButton lpButton, int r, int g, int b)
+        {
+            lpIface.setLED(lpButton.XCoord, lpButton.YCoord, r, g, b);
+        }
+
+        public void UpdateLogoColour(int r, int g, int b)
+        {
+            lpIface.setLED(0, 8, r, g, b);
         }
 
         private void CoolDownLighting(LaunchpadButton lpButton, float pct)
         {
-            if (pct > 0 && pct < 0.15) {
+            if (pct >= 0 && pct < 0.15) {
                 UpdateButtonColour(lpButton, MAX_CD_COLOUR);
             }
             else if (pct > 0.15 && pct < 0.3)
@@ -189,34 +211,42 @@ namespace LaunchpadHotbars
             }
         }
 
-        private void OffCooldown(LaunchpadButton lpButton)
+        private void ResetCooldown(LaunchpadButton lpButton)
         {
             lpButton.OnCooldown = false;
         }
 
         public void ManageCooldown(LaunchpadButton lpButton, float pct)
-        {
+        {            
             CoolDownLighting (lpButton, pct);
             if (pct >= 0.99)
             {
-                OffCooldown(lpButton);
+                ResetCooldown(lpButton);
             }
         }
 
         public void InitialLightUp()
         {
             lpIface.clearAllLEDs();
-            var mainGridLEDs = config.LaunchpadGrid.Where(b => b.XCoord >= 0 && b.YCoord >= 0).Where(b => b.Hotbar != null && b.Slot != null);
-            foreach (var lpButton in mainGridLEDs)
+            
+            var activeButtons = config.LaunchpadGrid.Where(b => b.XCoord >= 0 && b.YCoord >= 0).Where(b => b.Hotbar != null && b.Slot != null);
+            foreach (var lpButton in activeButtons)
             {
-                UpdateButtonColour(lpButton, READY_COLOUR);
+                UpdateButtonColourForce(lpButton, READY_COLOUR);
             }
+            var unusedButtons = config.LaunchpadGrid.Where(b => b.XCoord >= 0 && b.YCoord >= 0).Where(b => b.Hotbar == null && b.Slot == null);
+            foreach (var lpButton in unusedButtons)
+            {
+                UpdateUnusedButtonColour(lpButton, config.BackgroundColourRed, config.BackgroundColourGreen, config.BackgroundColourBlue);
+            }
+            UpdateLogoColour(config.BackgroundColourRed, config.BackgroundColourGreen, config.BackgroundColourBlue);
         }
 
         public void Disconnect()
         {
             if (LaunchpadReady)
             {
+                lpIface.SetMode(LaunchpadMode.Live);
                 lpIface.disconnect(launchpad);
                 lpIface.Connected = false;
             }
@@ -281,40 +311,34 @@ namespace LaunchpadHotbars
                         var slot = hotbar.GetHotbarSlot(0);
                         if (slot != null)
                         {
-                            logAction("slot is not null");
                             plugin.HotbarToExecute = lpButton.Hotbar;
                             plugin.SlotToExecute = lpButton.Slot;
-                            logAction("hotbar and slot set");
                             if (!lpButton.OnCooldown)
                             {
                                 UpdateButtonColour(lpButton, MAX_CD_COLOUR);
                                 lpButton.OnCooldown = true;
+                                foreach (var shared in config.LaunchpadGrid.Where(b => b.Hotbar == lpButton.Hotbar && b.Slot == lpButton.Slot))
+                                {
+                                    shared.OnCooldown = true;
+                                }
                             }
                         }
-                        else
-                            logAction("slot is null");
                     }
-                    else
-                        logAction("hotbar Slots is null");
                 }
-                else
-                    logAction("hotbars is null.");
             }
-            else
-                logAction("hotbar module is null.");
         }
 
         public void KeyPressed(object source, LaunchpadKeyEventArgs e)
         {
             logAction($"launchpad button x:{e.GetX()}, y:{e.GetY()} fired");
             var lpButton = config.LaunchpadGrid.FirstOrDefault(b => b.XCoord == e.GetX() && b.YCoord == e.GetY());
-            HandleAnyKeyPress(lpButton);
+            HandleAnyKeyPress(lpButton);            
         }
 
         ~LaunchpadHandler()
         {
             if (lpIface.Connected)
-            {
+            {                
                 Disconnect();
             }
         }

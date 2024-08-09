@@ -10,9 +10,9 @@
       },
       "launchpad-dot-net": {
         "type": "Direct",
-        "requested": "[2.2.0, )",
-        "resolved": "2.2.0",
-        "contentHash": "pmRHmjliaiiQwm9aH1+I7ydTMZujSuF7l6ZtciKzcVlaJVBh0etrsNeHh2m08mkdp6V59pNPPh62KppIi9T/oQ==",
+        "requested": "[2.2.2, )",
+        "resolved": "2.2.2",
+        "contentHash": "Ig2sdkzM4pRgetd0wtyuPnyw5frURS23FUuiTp9QvhOkrGpKBbX0VmSwYyfuQzf5r+I5qNxRL+Hji7/JKDvXag==",
         "dependencies": {
           "midi-dot-net2": "2.0.1"
         }

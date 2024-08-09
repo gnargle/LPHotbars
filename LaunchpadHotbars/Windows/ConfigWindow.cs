@@ -15,6 +15,7 @@ public class ConfigWindow : Window, IDisposable
     private Configuration config;
     private LaunchpadHandler launchpadHandler;
     private List<LaunchpadButton> lpGrid = new List<LaunchpadButton>();
+    uint rgbint; 
 
     private LaunchpadHotbarsPlugin plugin;
 
@@ -99,10 +100,9 @@ public class ConfigWindow : Window, IDisposable
                         ImGui.TableNextColumn();
                         if (x == 0 && y == 8)
                         {
-                            ImGui.TextUnformatted("logo");
+                            ImGui.TextUnformatted("Logo");
                             continue;
                         }
-                        ImGui.TextUnformatted($"x:{x},y:{y}");
                         LaunchpadButton? lpButton = null;
 
                         lpGrid.FirstOrDefault(b => b.XCoord == x && b.YCoord == y);
@@ -157,16 +157,25 @@ public class ConfigWindow : Window, IDisposable
                 }
                 ImGui.EndTable();
 
+                var backgroundColour = config.BackgroundColour;
+                if (ImGui.ColorEdit4("Unused Buttons Colour", ref backgroundColour))
+                {
+                    rgbint = ImGui.ColorConvertFloat4ToU32(backgroundColour);
+                    //launchpad maxes out at 127 for its rgb values.
+                    config.BackgroundColourRed = (int)((rgbint & 0x000000FF)/2);
+                    config.BackgroundColourGreen = (int)(((rgbint & 0x0000FF00) >> 8)/2);
+                    config.BackgroundColourBlue = (int)(((rgbint & 0x00FF0000) >> 48) / 2);
+                    backgroundColour = ImGui.ColorConvertU32ToFloat4(rgbint);
+                    config.BackgroundColour = backgroundColour;
+                    config.Save();
+                }
+
                 if (ImGui.Button("Save Launchpad Mapping"))
                 {
                     config.LaunchpadGrid = lpGrid;
-                    foreach (var btn in config.LaunchpadGrid)
-                    {
-                        plugin.ChatError($"button {btn.XCoord},{btn.YCoord} mapped to hotbar {btn.Hotbar}, slot {btn.Slot}");
-                    }
                     config.Save();
                     launchpadHandler.InitialLightUp();
-                }                
+                }
             }
         }
 
