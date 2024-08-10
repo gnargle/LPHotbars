@@ -51,17 +51,15 @@ public class ConfigWindow : Window, IDisposable
     {
         var selectedLP = config.SelectedLaunchpadId;
         var selectedLPint = launchpadHandler.LaunchpadIDs.IndexOf(selectedLP);
-        if (ImGui.Button("Refresh Launchpad List"))
-        {
-            launchpadHandler.ListLaunchpads();
-        }
-
         if (ImGui.Combo("Launchpad to connect to", ref selectedLPint, launchpadHandler.LaunchpadIDs.ToArray(), launchpadHandler.LaunchpadIDs.Count()))
         {
             config.SelectedLaunchpadId = launchpadHandler.LaunchpadIDs[selectedLPint];            
             config.Save();
             launchpadHandler.SelectLaunchpad();
         }
+
+        if (!launchpadHandler.LaunchpadConnected)
+            ImGui.TextUnformatted("If your launchpad is not listed, ensure it is plugged in then disable and enable this plugin.");
 
         if (!String.IsNullOrWhiteSpace(config.SelectedLaunchpadId) && launchpadHandler.LaunchpadIDs.Contains(config.SelectedLaunchpadId) && !launchpadHandler.LaunchpadConnected && ImGui.Button("Connect Launchpad"))
         {

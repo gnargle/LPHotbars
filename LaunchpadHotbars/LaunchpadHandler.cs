@@ -17,9 +17,9 @@ namespace LaunchpadHotbars
     public unsafe class LaunchpadHandler
     {
         [PluginService] internal static IFramework framework { get; private set; } = null!;
-        public List<String> LaunchpadIDs { get; set; }       
+        public List<String> LaunchpadIDs { get; set; } = new List<string>();    
 
-        private Interface.LaunchpadDevice[] lps;
+        private Interface.LaunchpadDevice[] lps = new Interface.LaunchpadDevice[0];
         private Interface.LaunchpadDevice? launchpad;
         private Interface lpIface;
         private RaptureHotbarModule* hotbarModule;
@@ -28,6 +28,7 @@ namespace LaunchpadHotbars
         private Configuration config;
 
         private const int READY_COLOUR = 87;
+        private const int PROCCD_COLOUR = 49;
         private const int MAX_CD_COLOUR = 120;
         private const int FIFTEEN_PCT_COLOUR = 10;
         private const int THIRTY_PCT_COLOUR = 9;
@@ -76,6 +77,8 @@ namespace LaunchpadHotbars
             {
                 if (lps == null || !lps.Any())
                     ListLaunchpads();
+                if (lps == null || !lps.Any())
+                    return false;
                 foreach (var lp in lps)
                 {
                     if (lp._isLegacy && lp._midiName == config.SelectedLaunchpadId)
@@ -176,7 +179,7 @@ namespace LaunchpadHotbars
             lpIface.setLED(0, 8, r, g, b);
         }
 
-        private void CoolDownLighting(LaunchpadButton lpButton, float pct)
+        private void CoolDownLighting(LaunchpadButton lpButton, float pct, bool isProcced)
         {
             if (pct >= 0 && pct < 0.15) {
                 UpdateButtonColour(lpButton, MAX_CD_COLOUR);
@@ -207,7 +210,14 @@ namespace LaunchpadHotbars
             }
             else if (pct > 0.99)
             {
-                UpdateButtonColour(lpButton, READY_COLOUR);
+                if (isProcced)
+                {
+                    UpdateButtonColour(lpButton, PROCCD_COLOUR);
+                }
+                else
+                {
+                    UpdateButtonColour(lpButton, READY_COLOUR);
+                }
             }
         }
 
@@ -216,9 +226,9 @@ namespace LaunchpadHotbars
             lpButton.OnCooldown = false;
         }
 
-        public void ManageCooldown(LaunchpadButton lpButton, float pct)
+        public void ManageCooldown(LaunchpadButton lpButton, float pct, bool isProcced)
         {            
-            CoolDownLighting (lpButton, pct);
+            CoolDownLighting (lpButton, pct, isProcced);
             if (pct >= 0.99)
             {
                 ResetCooldown(lpButton);

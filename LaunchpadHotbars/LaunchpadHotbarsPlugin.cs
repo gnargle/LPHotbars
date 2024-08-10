@@ -118,62 +118,73 @@ public unsafe sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
 
     private void CastAction()
     {
-        if (HotbarToExecute != null && SlotToExecute != null)
+        if (launchpadHandler.LaunchpadConnected)
         {
-            ChatError("hotbar id: " + HotbarToExecute + " slot id: " + SlotToExecute);
-            if (HotbarModule != null)
+            if (HotbarToExecute != null && SlotToExecute != null)
             {
-                if (HotbarModule->Hotbars != null)
+                ChatError("hotbar id: " + HotbarToExecute + " slot id: " + SlotToExecute);
+                if (HotbarModule != null)
                 {
-                    var hotbar = HotbarModule->Hotbars[HotbarToExecute.Value];
-                    if (hotbar.Slots != null)
+                    if (HotbarModule->Hotbars != null)
                     {
-                        var slot = hotbar.GetHotbarSlot(SlotToExecute.Value);
-                        if (slot != null)
+                        var hotbar = HotbarModule->Hotbars[HotbarToExecute.Value];
+                        if (hotbar.Slots != null)
                         {
-                            
-                            ChatError("firing slot");
-                            var x = HotbarModule->ExecuteSlot(slot);
+                            var slot = hotbar.GetHotbarSlot(SlotToExecute.Value);
+                            if (slot != null)
+                            {
+
+                                ChatError("firing slot");
+                                var x = HotbarModule->ExecuteSlot(slot);
+                            }
                         }
                     }
                 }
-            }            
-            HotbarToExecute = null;
-            SlotToExecute = null;
+                HotbarToExecute = null;
+                SlotToExecute = null;
+            }
         }
     }
 
     private void CheckRecasts()
     {
-        var cooldowns = Configuration.LaunchpadGrid.Where(b => b.Hotbar.HasValue && b.Slot.HasValue);
-        
-        foreach (var cd in cooldowns) {
-            var slot = HotbarModule->GetSlotById((uint)cd.Hotbar.Value, cd.Slot.Value);
-            if (slot != null)
+        if (launchpadHandler.LaunchpadConnected)
+        {
+            var cooldowns = Configuration.LaunchpadGrid.Where(b => b.Hotbar.HasValue && b.Slot.HasValue);
+
+            foreach (var cd in cooldowns)
             {
-                var aid = slot->ApparentActionId;
-                var usable = slot->IsSlotUsable(RaptureHotbarModule.HotbarSlotType.Action, aid);
-                if (usable)
+                var slot = HotbarModule->GetSlotById((uint)cd.Hotbar!.Value, cd.Slot!.Value);
+                if (slot != null)
                 {
-                    var recastTime = ActionMgr->GetRecastTime(ActionType.Action, aid);
-                    var recastElapsed = ActionMgr->GetRecastTimeElapsed(ActionType.Action, aid);
-                    float pct;
-                    if (recastTime == 0 && recastElapsed == 0)
+                    var aid = slot->ApparentActionId;
+                    var usable = slot->IsSlotUsable(RaptureHotbarModule.HotbarSlotType.Action, aid);
+                    if (usable)
                     {
-                        pct = 1;
+                        var recastTime = ActionMgr->GetRecastTime(ActionType.Action, aid);
+                        var recastElapsed = ActionMgr->GetRecastTimeElapsed(ActionType.Action, aid);
+                        var isProcced = slot->IsActionHighlighted(RaptureHotbarModule.HotbarSlotType.Action, aid);
+                        if (isProcced)
+                            ChatError($"action x:{cd.XCoord}, y:{cd.YCoord} procced");
+                        float pct;
+                        if (recastTime == 0 && recastElapsed == 0)
+                        {
+                            pct = 1;
+                        }
+                        else
+                        {
+                            pct = recastElapsed / recastTime;
+                            cd.OnCooldown = true;
+                        }
+                        launchpadHandler.ManageCooldown(cd, pct, isProcced);
                     }
                     else
                     {
-                        pct = recastElapsed / recastTime;
-                        cd.OnCooldown = true;
+                        launchpadHandler.ManageCooldown(cd, 0, false);
                     }
-                    launchpadHandler.ManageCooldown(cd, pct);
-                } else
-                {
-                    launchpadHandler.ManageCooldown(cd, 0);
                 }
             }
-        }        
+        }
     }
 
     private void DrawUI() { 
