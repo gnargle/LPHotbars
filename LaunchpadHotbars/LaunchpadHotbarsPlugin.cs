@@ -90,9 +90,9 @@ public unsafe sealed class LaunchpadHotbarsPlugin : IDalamudPlugin
 
     public void ChatError(string text)
     {
+        DalamudApi.PluginLog.Error(text);
         if (Configuration.ShowDebugMessages)
-        {
-            DalamudApi.PluginLog.Error(text);
+        {            
             DalamudApi.ChatGui.Print(new XivChatEntry
             {
                 Message = text,

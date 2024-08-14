@@ -254,11 +254,19 @@ namespace LaunchpadHotbars
 
         public void Disconnect()
         {
-            if (LaunchpadReady)
+            try
+            {
+                if (LaunchpadReady)
             {
                 lpIface.SetMode(LaunchpadMode.Live);
                 lpIface.disconnect(launchpad);
                 lpIface.Connected = false;
+            }
+            }
+            catch (Exception ex)
+            {
+                //error on disconnect, probably the launchpad has been unplugged or something. Log it and move on.
+                logAction("Error disconnecting launchpad: " + ex.Message);
             }
         }
 
@@ -348,7 +356,7 @@ namespace LaunchpadHotbars
         ~LaunchpadHandler()
         {
             if (lpIface.Connected)
-            {                
+            {
                 Disconnect();
             }
         }
