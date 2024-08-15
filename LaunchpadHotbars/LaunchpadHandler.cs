@@ -1,15 +1,10 @@
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using LaunchpadNET;
-using Midi.Instruments;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using static LaunchpadNET.Interface;
 
 namespace LaunchpadHotbars

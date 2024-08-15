@@ -10,17 +10,17 @@
       },
       "launchpad-dot-net": {
         "type": "Direct",
-        "requested": "[2.2.2, )",
-        "resolved": "2.2.2",
-        "contentHash": "Ig2sdkzM4pRgetd0wtyuPnyw5frURS23FUuiTp9QvhOkrGpKBbX0VmSwYyfuQzf5r+I5qNxRL+Hji7/JKDvXag==",
+        "requested": "[2.3.1, )",
+        "resolved": "2.3.1",
+        "contentHash": "ePHuXTOXocLM381ytQFkEa6WCAbMgIhXTmENzyPfuSFGLh0j7QBkWwqI4yUnjn8RKlKl+xqdBZqvjXELoQc0rA==",
         "dependencies": {
-          "midi-dot-net2": "2.0.1"
+          "Melanchall.DryWetMidi": "7.1.0"
         }
       },
-      "midi-dot-net2": {
+      "Melanchall.DryWetMidi": {
         "type": "Transitive",
-        "resolved": "2.0.1",
-        "contentHash": "sxaCOdPrgAxlO8E3Mva7TfUpzAc/1bBBdZy2jZXScwkgvdEbRbMlzmkCndJzGQnVuTpnjMGrzU2gZpImZrGWBQ=="
+        "resolved": "7.1.0",
+        "contentHash": "QfzIC6ImJFxpDEG+W+ZCd17aUjXQjcnJpXRJc7PXjSNAY1LtaL4IV0RLIKU5fLp1XVYYy0eXIaRL3hZ0p378fA=="
       }
     }
   }
